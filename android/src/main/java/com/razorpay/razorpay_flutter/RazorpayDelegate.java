@@ -73,7 +73,15 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
 
         requestedArguments = arguments;
 
-       invokeGetChargeDetails();
+       //invokeGetChargeDetails();
+         activity.runOnUiThread(
+            new Runnable() {
+                @Override
+                public void run() {
+                    invokeGetChargeDetails();
+                }
+            }
+        );
 
     }
 
