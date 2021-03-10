@@ -37,6 +37,7 @@ import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class RazorpayDelegate implements ActivityResultListener, ExternalWalletListener, PaymentResultWithDataListener {
 
@@ -46,7 +47,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
     private Map<String, Object> requestedArguments;
     private final String API_AUTH_KEY = "cnpwX3Rlc3RfVHg3VEs2V1gwdDdaaVE6enNRSTZKREJQRGlicXNpa2pNaE4xS1Jz";
     private final String WEB_SERVICE_URL = "http://192.168.1.20/App_DataService/api/Service";
-//    private final String WEB_SERVICE_URL = "http://appdataservice.iphysicianhub.com/api/Service";
+    //    private final String WEB_SERVICE_URL = "http://appdataservice.iphysicianhub.com/api/Service";
     private final String CREATE_ORDER_URL = "https://api.razorpay.com/v1/orders";
     private final String RAZOR_KEY = "rzp_test_Tx7TK6WX0t7ZiQ";
 
@@ -63,6 +64,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
     private static final int INCOMPATIBLE_PLUGIN = 3;
     private static final int UNKNOWN_ERROR = 100;
     private IphOrder createdOrder;
+    OkHttpClient client = new OkHttpClient();
 
 
     public RazorpayDelegate(Activity activity) {
@@ -168,7 +170,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
         }
         return  receipt;
     }
-
+/*
     private void invokeGetChargeDetails() {
         OkHttpClient client = new OkHttpClient();
 
@@ -288,12 +290,11 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
             requestData.addProperty("currency", currency);
             requestData.addProperty("receipt", receipt);
             requestData.addProperty("payment_capture", payment_capture);
-           // requestData.addProperty("notes", notes);
+            // requestData.addProperty("notes", notes);
 
             Map<String, String> map = new HashMap<>();
             map.put("Authorization", API_AUTH_KEY);
 
-            OkHttpClient client = new OkHttpClient();
             final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
             RequestBody body = RequestBody.create(JSON, requestData.toString());
 
@@ -368,7 +369,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
             reply.put("data", data);
             sendReply(reply);
         }
-    }
+    }*/
 
     private void openCheckOut(){
         try {
@@ -380,7 +381,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
             paymentData.put("currency", "INR");
             paymentData.put("theme", "{color: '#4458CB'}");
 //            paymentData.put("image", "");
-           // paymentData.put("notes", requestedArguments.get("notes"));
+            // paymentData.put("notes", requestedArguments.get("notes"));
             paymentData.put("order_id", createdOrder.getId());
             paymentData.put("receipt", requestedArguments.get("receipt"));
 
@@ -408,8 +409,9 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
     }
 
     public class GetChargesHandler extends AsyncTask<Void, Void, Void> {
-        OkHttpClient client = new OkHttpClient();
-        long finalAmount = 0;
+
+        Map<String, Object> reply;
+        Response response;
 
         @Override
         protected Void doInBackground(Void... voids) {
@@ -429,83 +431,15 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
                         .post(body)
                         .build();
 
-                client.newCall(request).enqueue(new okhttp3.Callback() {
-                    @Override
-                    public void onResponse(@NotNull okhttp3.Call call, @NotNull okhttp3.Response response) throws IOException {
-                        try {
-                            String responseStr = response.body().string();
-                            JSONObject mainObject = new JSONObject(responseStr);
-                            String resStr = mainObject.getString("Result");
+                response = client.newCall(request).execute();
 
-                            Gson gson = new Gson();
-                            Type token = new TypeToken<Collection<Charges>>() {
-                            }.getType();
-                            Collection<Charges> objList = gson.fromJson(resStr, token);
-
-                            List<Charges> chargesList = (List<Charges>) objList;
-                            String selectedMethod = (requestedArguments.get("selectedMethod")).toString();
-                            float amount = Float.parseFloat(requestedArguments.get("amount") + "");
-                            float selectedAmount = amount;
-
-                            for(int i=0; i<chargesList.size()-1; i++){
-                                Charges c = chargesList.get(i);
-                                selectedMethod = selectedMethod.trim();
-                                String cardType = c.getCardType().trim();
-                                float minAmount = Float.parseFloat(c.getMinAmount()+"");
-                                float maxAmount = Float.parseFloat(c.getMaxAmount()+"");
-                                float extraCharge = Float.parseFloat(c.getExtraCharges()+"");
-                                float razorPayFee = Float.parseFloat(c.getRazorPayFee()+"");
-
-                                if(selectedMethod.equals(cardType) && (amount >= minAmount && amount <= maxAmount)){
-                                    float amount1 = (selectedAmount * razorPayFee) / 100;
-                                    selectedAmount = amount1 + extraCharge;
-                                    break;
-                                }else if(selectedMethod.equals(cardType) && amount <= maxAmount){
-                                    float amount1 = (selectedAmount * razorPayFee) / 100;
-                                    selectedAmount = amount1 + extraCharge;
-                                    break;
-                                }
-                            }
-                            amount = amount + selectedAmount;
-                            amount = amount * 100; // convert to paise
-
-                            finalAmount = (long) amount;
-                            requestedArguments.put("amount", finalAmount);
-
-
-
-                        }catch (Exception e){
-                            Map<String, Object> reply = new HashMap<>();
-                            reply.put("type", "ERROR_GetChargeDetails");
-                            Map<String, Object> data = new HashMap<>();
-                            data.put("description", "failed to get charges details");
-                            data.put("error", e.getMessage());
-                            reply.put("data", data);
-                            sendReply(reply);
-                            e.printStackTrace();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(@NotNull okhttp3.Call call, @NotNull IOException e) {
-                        call.cancel();
-                        Map<String, Object> reply = new HashMap<>();
-                        reply.put("type", "ERROR_GetChargeDetails");
-                        Map<String, Object> data = new HashMap<>();
-                        data.put("description", "failed to get charges details");
-                        data.put("error", e.getMessage());
-                        reply.put("data", data);
-                        sendReply(reply);
-                    }
-                });
             } catch (Exception e) {
-                Map<String, Object> reply = new HashMap<>();
+                reply = new HashMap<>();
                 reply.put("type", "ERROR_GetChargeDetails");
                 Map<String, Object> data = new HashMap<>();
                 data.put("description", "failed to get charges details");
                 data.put("error", e.getMessage());
                 reply.put("data", data);
-                sendReply(reply);
                 e.printStackTrace();
             }
             return null;
@@ -514,8 +448,178 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+           if(reply != null){
+                sendReply(reply);
+            }else {
+               calculateCharges(response);
+            }
+        }
+    }
 
-            invokeCreateOrder(finalAmount);
+    public void calculateCharges(Response response){
+        long finalAmount = 0;
+        Map<String, Object> reply;
+        try {
+
+            String responseStr = response.body().string();
+            System.out.print(responseStr);
+            JSONObject mainObject = new JSONObject(responseStr);
+            String resStr = mainObject.getString("Result");
+
+            Gson gson = new Gson();
+            Type token = new TypeToken<Collection<Charges>>() {
+            }.getType();
+            Collection<Charges> objList = gson.fromJson(resStr, token);
+
+            List<Charges> chargesList = (List<Charges>) objList;
+            String selectedMethod = (requestedArguments.get("selectedMethod")).toString();
+            float amount = Float.parseFloat(requestedArguments.get("amount") + "");
+            float selectedAmount = amount;
+
+            for(int i=0; i<chargesList.size()-1; i++){
+                Charges c = chargesList.get(i);
+                selectedMethod = selectedMethod.trim();
+                String cardType = c.getCardType().trim();
+                float minAmount = Float.parseFloat(c.getMinAmount()+"");
+                float maxAmount = Float.parseFloat(c.getMaxAmount()+"");
+                float extraCharge = Float.parseFloat(c.getExtraCharges()+"");
+                float razorPayFee = Float.parseFloat(c.getRazorPayFee()+"");
+
+                if(selectedMethod.equals(cardType) && (amount >= minAmount && amount <= maxAmount)){
+                    float amount1 = (selectedAmount * razorPayFee) / 100;
+                    selectedAmount = amount1 + extraCharge;
+                    break;
+                }else if(selectedMethod.equals(cardType) && amount <= maxAmount){
+                    float amount1 = (selectedAmount * razorPayFee) / 100;
+                    selectedAmount = amount1 + extraCharge;
+                    break;
+                }
+            }
+            amount = amount + selectedAmount;
+            amount = amount * 100; // convert to paise
+
+            finalAmount = (long) amount;
+            requestedArguments.put("amount", finalAmount);
+
+
+            CreateOrderHandler createOrderHandler = new CreateOrderHandler(finalAmount);
+            createOrderHandler.execute();
+
+        }catch (Exception e){
+            reply = new HashMap<>();
+            reply.put("type", "ERROR_GetChargeDetails");
+            Map<String, Object> data = new HashMap<>();
+            data.put("description", "failed to get charges details");
+            data.put("error", e.getMessage());
+            reply.put("data", data);
+            e.printStackTrace();
+            sendReply(reply);
+        }
+    }
+
+    public class CreateOrderHandler extends AsyncTask<Void, Void, Void> {
+        OkHttpClient client = new OkHttpClient();
+        long finalAmount = 0;
+        Map<String, Object> reply;
+        Response response;
+
+        CreateOrderHandler(Long finalAmount){
+            this.finalAmount = finalAmount;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            try {
+                System.out.println("============> finalAmount "+finalAmount);
+                System.out.println("============> 1");
+                String receipt = getReceiptId();
+                JsonObject notesData = new JsonObject();
+                notesData.addProperty("notes", "note value");
+//            String notes = "note value";
+                String notes = "{\"notes\": \"note value\"}";
+                requestedArguments.put("receipt", receipt);
+                requestedArguments.put("notes", notes);
+
+                String currency = "INR";
+                boolean payment_capture = true;
+    //            long finalAmount = Long.parseLong(requestedArguments.get("amount").toString());
+
+                JsonObject requestData = new JsonObject();
+                requestData.addProperty("amount", finalAmount);
+                requestData.addProperty("currency", currency);
+                requestData.addProperty("receipt", receipt);
+                requestData.addProperty("payment_capture", payment_capture);
+                // requestData.addProperty("notes", notes);
+
+                Map<String, String> map = new HashMap<>();
+                map.put("Authorization", API_AUTH_KEY);
+
+
+                final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+                RequestBody body = RequestBody.create(JSON, requestData.toString());
+
+                Request request = new Request.Builder()
+                        .header("Authorization", "Basic "+API_AUTH_KEY)
+                        .url(CREATE_ORDER_URL)
+                        .post(body)
+                        .build();
+
+                response = client.newCall(request).execute();
+
+            }catch (Exception e){
+                System.out.println("============> 7");
+                reply = new HashMap<>();
+                reply.put("type", "ERROR_CreateOrder");
+                Map<String, Object> data = new HashMap<>();
+                data.put("description", "failed to create order");
+                data.put("error", e.getMessage());
+                reply.put("data", data);
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            if(reply != null){
+                sendReply(reply);
+            }else{
+                bindCreateOrderDetails(response);
+            }
+        }
+    }
+
+    public void bindCreateOrderDetails(Response response){
+        Map<String, Object> reply;
+        try {
+            System.out.println("=======> 9");
+            System.out.println(response.body());
+
+            String responseStr = response.body().string();
+
+            Gson gson = new Gson();
+            Type token = new TypeToken<IphOrder>() { }.getType();
+            createdOrder = gson.fromJson(responseStr, token);
+
+            if(createdOrder!= null && createdOrder.getId()!=null && !TextUtils.isEmpty(createdOrder.getId())){
+                openCheckOut();
+            }else{
+                reply = new HashMap<>();
+                reply.put("type", "ERROR_CreateOrder");
+                Map<String, Object> data = new HashMap<>();
+                data.put("description", "failed to create order");
+                data.put("error", "");
+                reply.put("data", data);
+                sendReply(reply);
+            }
+        }catch (Exception e){
+            reply = new HashMap<>();
+            reply.put("type", "ERROR_CreateOrder");
+            Map<String, Object> data = new HashMap<>();
+            data.put("description", "failed to create order");
+            data.put("error", e.getMessage());
+            reply.put("data", data);
+            sendReply(reply);
         }
     }
 }
