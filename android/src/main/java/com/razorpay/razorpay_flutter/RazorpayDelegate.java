@@ -552,7 +552,6 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
                 requestData.put("WebMethodName", "SaveRazorPaydetails");
 
                 String data = new GsonBuilder().create().toJson(requestData);
-                Log.e("IPH 546", data);
 
                 RequestBody body = RequestBody.create(JSON, data);
                 Request request = new Request.Builder()
