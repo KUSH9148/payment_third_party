@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 
 import 'package:eventify/eventify.dart';
 
-class Razorpay {
+class IHealthPay {
   // Response codes from platform
   static const _CODE_PAYMENT_SUCCESS = 0;
   static const _CODE_PAYMENT_ERROR = 1;
@@ -26,11 +26,11 @@ class Razorpay {
   // EventEmitter instance used for communication
   EventEmitter _eventEmitter;
 
-  Razorpay() {
+  IHealthPay() {
     _eventEmitter = new EventEmitter();
   }
 
-  /// Opens Razorpay checkout
+  /// Opens IHealthPay checkout
   void open(Map<String, dynamic> options) async {
     Map<String, dynamic> validationResult = _validateOptions(options);
 
@@ -124,9 +124,9 @@ class PaymentSuccessResponse {
   PaymentSuccessResponse(this.paymentId, this.orderId, this.signature);
 
   static PaymentSuccessResponse fromMap(Map<dynamic, dynamic> map) {
-    String paymentId = map["razorpay_payment_id"];
-    String signature = map["razorpay_signature"];
-    String orderId = map["razorpay_order_id"];
+    String paymentId = map["ihealthpay_payment_id"];
+    String signature = map["ihealthpay_signature"];
+    String orderId = map["ihealthpay_order_id"];
 
     return new PaymentSuccessResponse(paymentId, orderId, signature);
   }
