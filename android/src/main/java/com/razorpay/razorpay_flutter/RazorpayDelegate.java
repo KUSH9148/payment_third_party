@@ -17,6 +17,7 @@ import com.razorpay.razorpay_flutter.iph.IphOrder;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
+import android.os.AsyncTask;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -73,16 +74,10 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
 
         requestedArguments = arguments;
 
-       //invokeGetChargeDetails();
-         activity.runOnUiThread(
-            new Runnable() {
-                @Override
-                public void run() {
-                    invokeGetChargeDetails();
-                }
-            }
-        );
+        //invokeGetChargeDetails();
 
+        GetChargesHandler getChargesHandler =  new GetChargesHandler();
+        getChargesHandler.execute();
     }
 
     private void sendReply(Map<String, Object> data) {
@@ -410,5 +405,117 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
 
     private void savePaymentData(){
 
+    }
+
+    public class GetChargesHandler extends AsyncTask<Void, Void, Void> {
+        OkHttpClient client = new OkHttpClient();
+        long finalAmount = 0;
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+
+            try {
+                final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+
+                final JsonObject requestData = new JsonObject();
+                requestData.addProperty("ParameterName", "[]");
+                requestData.addProperty("ParameterValue", "[]");
+                requestData.addProperty("WebMethodName", "GetChargeDetails");
+
+                RequestBody body = RequestBody.create(JSON, requestData.toString());
+
+                Request request = new Request.Builder()
+                        .url(WEB_SERVICE_URL)
+                        .post(body)
+                        .build();
+
+                client.newCall(request).enqueue(new okhttp3.Callback() {
+                    @Override
+                    public void onResponse(@NotNull okhttp3.Call call, @NotNull okhttp3.Response response) throws IOException {
+                        try {
+                            String responseStr = response.body().string();
+                            JSONObject mainObject = new JSONObject(responseStr);
+                            String resStr = mainObject.getString("Result");
+
+                            Gson gson = new Gson();
+                            Type token = new TypeToken<Collection<Charges>>() {
+                            }.getType();
+                            Collection<Charges> objList = gson.fromJson(resStr, token);
+
+                            List<Charges> chargesList = (List<Charges>) objList;
+                            String selectedMethod = (requestedArguments.get("selectedMethod")).toString();
+                            float amount = Float.parseFloat(requestedArguments.get("amount") + "");
+                            float selectedAmount = amount;
+
+                            for(int i=0; i<chargesList.size()-1; i++){
+                                Charges c = chargesList.get(i);
+                                selectedMethod = selectedMethod.trim();
+                                String cardType = c.getCardType().trim();
+                                float minAmount = Float.parseFloat(c.getMinAmount()+"");
+                                float maxAmount = Float.parseFloat(c.getMaxAmount()+"");
+                                float extraCharge = Float.parseFloat(c.getExtraCharges()+"");
+                                float razorPayFee = Float.parseFloat(c.getRazorPayFee()+"");
+
+                                if(selectedMethod.equals(cardType) && (amount >= minAmount && amount <= maxAmount)){
+                                    float amount1 = (selectedAmount * razorPayFee) / 100;
+                                    selectedAmount = amount1 + extraCharge;
+                                    break;
+                                }else if(selectedMethod.equals(cardType) && amount <= maxAmount){
+                                    float amount1 = (selectedAmount * razorPayFee) / 100;
+                                    selectedAmount = amount1 + extraCharge;
+                                    break;
+                                }
+                            }
+                            amount = amount + selectedAmount;
+                            amount = amount * 100; // convert to paise
+
+                            finalAmount = (long) amount;
+                            requestedArguments.put("amount", finalAmount);
+
+
+
+                        }catch (Exception e){
+                            Map<String, Object> reply = new HashMap<>();
+                            reply.put("type", "ERROR_GetChargeDetails");
+                            Map<String, Object> data = new HashMap<>();
+                            data.put("description", "failed to get charges details");
+                            data.put("error", e.getMessage());
+                            reply.put("data", data);
+                            sendReply(reply);
+                            e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NotNull okhttp3.Call call, @NotNull IOException e) {
+                        call.cancel();
+                        Map<String, Object> reply = new HashMap<>();
+                        reply.put("type", "ERROR_GetChargeDetails");
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("description", "failed to get charges details");
+                        data.put("error", e.getMessage());
+                        reply.put("data", data);
+                        sendReply(reply);
+                    }
+                });
+            } catch (Exception e) {
+                Map<String, Object> reply = new HashMap<>();
+                reply.put("type", "ERROR_GetChargeDetails");
+                Map<String, Object> data = new HashMap<>();
+                data.put("description", "failed to get charges details");
+                data.put("error", e.getMessage());
+                reply.put("data", data);
+                sendReply(reply);
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            invokeCreateOrder(finalAmount);
+        }
     }
 }
