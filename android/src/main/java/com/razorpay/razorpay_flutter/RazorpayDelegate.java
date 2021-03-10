@@ -85,25 +85,25 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
             Map<String, Object> dataReply = new HashMap<>();
 
             if(requestedArguments.get("customer_data") == null){
-                dataReply.put("error", "Please provide customer_data");
+                dataReply.put("message", "Please provide customer_data");
                 reply.put("data", dataReply);
                 sendReply(reply);
             }else {
                 Map<String, String> customerData = (Map<String, String>) requestedArguments.get("customer_data");
                 if (!customerData.containsKey("name") || TextUtils.isEmpty(customerData.get("name"))) {
-                    dataReply.put("error", "Please provide customer name");
+                    dataReply.put("message", "Please provide customer name");
                     reply.put("data", dataReply);
                     sendReply(reply);
                 }else if (!customerData.containsKey("contact") || TextUtils.isEmpty(customerData.get("contact"))) {
-                    dataReply.put("error", "Please provide customer contact number");
+                    dataReply.put("message", "Please provide customer contact number");
                     reply.put("data", dataReply);
                     sendReply(reply);
                 }else if (!customerData.containsKey("id") || TextUtils.isEmpty(customerData.get("id"))) {
-                    dataReply.put("error", "Please provide customer id");
+                    dataReply.put("message", "Please provide customer id");
                     reply.put("data", dataReply);
                     sendReply(reply);
                 }else if (!customerData.containsKey("organization_id") || TextUtils.isEmpty(customerData.get("organization_id"))) {
-                    dataReply.put("error", "Please provide organization id");
+                    dataReply.put("message", "Please provide organization id");
                     reply.put("data", dataReply);
                     sendReply(reply);
                 }else{
@@ -243,7 +243,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
             reply.put("type", CODE_PAYMENT_ERROR);
             Map<String, Object> data = new HashMap<>();
             data.put("description", "failed to make payments");
-            data.put("error", e.getMessage());
+            data.put("message", e.getMessage());
             reply.put("data", data);
             sendReply(reply);
         }
@@ -280,7 +280,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
                 reply.put("type", CODE_PAYMENT_ERROR);
                 Map<String, Object> data = new HashMap<>();
                 data.put("description", "failed to get charges details");
-                data.put("error", e.getMessage());
+                data.put("message", e.getMessage());
                 reply.put("data", data);
                 e.printStackTrace();
             }
@@ -349,7 +349,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
             reply.put("type", CODE_PAYMENT_ERROR);
             Map<String, Object> data = new HashMap<>();
             data.put("description", "failed to get charges details");
-            data.put("error", e.getMessage());
+            data.put("message", e.getMessage());
             reply.put("data", data);
             e.printStackTrace();
             sendReply(reply);
@@ -411,7 +411,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
                 reply.put("type", CODE_PAYMENT_ERROR);
                 Map<String, Object> data = new HashMap<>();
                 data.put("description", "failed to create order");
-                data.put("error", e.getMessage());
+                data.put("message", e.getMessage());
                 reply.put("data", data);
             }
             return null;
@@ -444,8 +444,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
                 reply = new HashMap<>();
                 reply.put("type", CODE_PAYMENT_ERROR);
                 Map<String, Object> data = new HashMap<>();
-                data.put("description", "failed to create order");
-                data.put("error", "");
+                data.put("message", "failed to create order");
                 reply.put("data", data);
                 sendReply(reply);
             }
@@ -453,7 +452,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
             reply = new HashMap<>();
             reply.put("type", CODE_PAYMENT_ERROR);
             Map<String, Object> data = new HashMap<>();
-            data.put("description", "failed to create order");
+            data.put("message", "failed to create order 455");
             data.put("error", e.getMessage());
             reply.put("data", data);
             sendReply(reply);
@@ -499,7 +498,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
                 reply = new HashMap<>();
                 reply.put("type", CODE_PAYMENT_ERROR);
                 Map<String, Object> data = new HashMap<>();
-                data.put("description", "failed UpdateOrderIDinQuickModePayments");
+                data.put("message", "failed UpdateOrderIDinQuickModePayments");
                 data.put("error", e.getMessage());
                 reply.put("data", data);
                 e.printStackTrace();
@@ -567,7 +566,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
                 reply = new HashMap<>();
                 reply.put("type", CODE_PAYMENT_ERROR);
                 Map<String, Object> data = new HashMap<>();
-                data.put("description", "failed UpdateOrderIDinQuickModePayments");
+                data.put("message", "failed save customer");
                 data.put("error", e.getMessage());
                 reply.put("data", data);
                 e.printStackTrace();
