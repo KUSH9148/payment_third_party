@@ -2,6 +2,7 @@ package com.razorpay.razorpay_flutter.iph;
 
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.Serializable;
 
@@ -14,7 +15,7 @@ public class IphOrder  implements Serializable {
     private String currency;
     private String receipt;
     private boolean payment_capture;
-    private JSONArray []notes;
+    private JSONObject notes;
     private boolean authorized;
 
     private long amount_paid;
@@ -96,11 +97,11 @@ public class IphOrder  implements Serializable {
         this.payment_capture = payment_capture;
     }
 
-    public JSONArray[] getNotes() {
+    public JSONObject getNotes() {
         return notes;
     }
 
-    public void setNotes(JSONArray[] notes) {
+    public void setNotes(JSONObject notes) {
         this.notes = notes;
     }
 
