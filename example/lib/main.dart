@@ -30,7 +30,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
 
-  Razorpay _razorpay;
+  IHealthPay _ihealthpay;
 
 
   @override
@@ -47,6 +47,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   RaisedButton(onPressed: payByDebit, child: Text('Pay 100 By Debit')),
                   RaisedButton(onPressed: payByCredit, child: Text('Pay 100 By Credit')),
                   RaisedButton(onPressed: payByUpi, child: Text('Pay 100 By UPI')),
+                  RaisedButton(onPressed: payByNetbanking, child: Text('Pay 200 By Net banking')),
                   RaisedButton(onPressed: payByCredit5, child: Text('Pay 50000 By Credit'))
                 ])),
       ),
@@ -56,16 +57,16 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _razorpay = Razorpay();
-    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
-    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
-    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+    _ihealthpay = IHealthPay();
+    _ihealthpay.on(IHealthPay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _ihealthpay.on(IHealthPay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _ihealthpay.on(IHealthPay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
   }
 
   @override
   void dispose() {
     super.dispose();
-    _razorpay.clear();
+    _ihealthpay.clear();
   }
 
   void payByDebit() {
@@ -78,21 +79,31 @@ class _MyHomePageState extends State<MyHomePage> {
   void payByCredit5() {
     openCheckout("Credit card", amount: 5000);
   }
+  void payByNetbanking() {
+    openCheckout("netbanking", amount: 200);
+  }
 
   void payByUpi() {
     openCheckout("UPI");
   }
 
   void openCheckout(selectedMethod, {amount = 100}) async {
+    var customer = {
+      'name': "Shivam Lussote",
+      'contact': '7995055011',
+      'email': 'sourabhuniyal@iphysicianhub.com',
+      'id': '197545',
+      'organization_id':'2875'
+    };
     var options = {
       'key': 'iph_gujarat_pharmacy',
       'amount': amount,
-      'customer_data': {'contact': '7995055011', 'email': 'sourabhuniyal@iphysicianhub.com'},
+      'customer_data': customer,
       'selectedMethod': selectedMethod
     };
 
     try {
-      _razorpay.open(options);
+      _ihealthpay.open(options);
     } catch (e) {
       debugPrint(e);
     }
