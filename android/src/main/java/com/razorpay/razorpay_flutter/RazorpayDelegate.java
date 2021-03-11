@@ -229,7 +229,8 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
             paymentData.put("notes", requestedArguments.get("notes"));
             paymentData.put("order_id", createdOrder.getId());
             paymentData.put("receipt", requestedArguments.get("receipt"));
-
+            paymentData.put("description", "GSPC Payment;5000");
+            
             JSONObject options = new JSONObject(paymentData);
 
             Intent intent = new Intent(activity, CheckoutActivity.class);
