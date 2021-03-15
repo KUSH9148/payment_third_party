@@ -3,7 +3,7 @@
 Flutter plugin for iHealthPay Integration.
 
 
-[![ihealthpay package]](https://ihealthpay.in/)
+[![ihealthpay package](https://ihealthpay.in/wp-content/uploads/2019/08/iHealth-Pay-Logo.png)](https://ihealthpay.in/)
 
 * [Getting Started](#getting-started)
 * [Prerequisites](#prerequisites)
