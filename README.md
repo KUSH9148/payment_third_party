@@ -120,10 +120,10 @@ var options = {
 
 #### List of available payment method
 - [x] 'Debit card'
-- [ ] 'Credit card'
-- [ ] 'netbanking'
-- [ ] 'upi'
-- [ ] 'wallet'
+- [x] 'Credit card'
+- [x] 'netbanking'
+- [x] 'upi'
+- [x] 'wallet'
 
 
 #### Open Checkout
