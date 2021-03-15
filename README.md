@@ -154,6 +154,8 @@ Add the following line below `config.build_settings['ENABLE_BITCODE'] = 'YES'`:
 
 `config.build_settings['SWIFT_VERSION'] = '5.0'`
 
+Or if `config` variable not found add the line in your podfile `ENV['SWIFT_VERSION'] = '5'`
+
 ### `CocoaPods could not find compatible versions for pod "razorpay_flutter"` when running `pod install`
 
 ```
