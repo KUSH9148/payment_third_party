@@ -1,8 +1,9 @@
-# Razorpay Flutter
+# iHealthPay Flutter
 
-Flutter plugin for Razorpay SDK.
+Flutter plugin for iHealthPay Integration.
 
-[![pub package](https://img.shields.io/pub/v/razorpay_flutter.svg)](https://pub.dartlang.org/packages/razorpay_flutter)
+
+[![ihealthpay package]]
 
 * [Getting Started](#getting-started)
 * [Prerequisites](#prerequisites)
@@ -16,28 +17,14 @@ Flutter plugin for Razorpay SDK.
 
 This flutter plugin is a wrapper around our Android and iOS SDKs.
 
-The following documentation is only focused on the wrapper around our native Android and iOS SDKs. To know more about our SDKs and how to link them within the projects, refer to the following documentation:
-
-**Android**: [https://razorpay.com/docs/checkout/android/](https://razorpay.com/docs/checkout/android/)
-
-**iOS**: [https://razorpay.com/docs/ios/](https://razorpay.com/docs/ios/)
-
-To know more about Razorpay payment flow and steps involved, read up here: [https://razorpay.com/docs/](https://razorpay.com/docs/)
-
-## Prerequisites
-
- - Learn about the <a href="https://razorpay.com/docs/payment-gateway/payment-flow/" target="_blank">Razorpay Payment Flow</a>.
- - Sign up for a <a href="https://dashboard.razorpay.com/#/access/signin">Razorpay Account</a> and generate the <a href="https://razorpay.com/docs/payment-gateway/dashboard-guide/settings/#api-keys/" target="_blank">API Keys</a> from the Razorpay Dashboard. Using the Test keys helps simulate a sandbox environment. No actual monetary transaction happens when using the Test keys. Use Live keys once you have thoroughly tested the application and are ready to go live.
- 
 
 ## Installation
-
-This plugin is available on Pub: [https://pub.dev/packages/razorpay_flutter](https://pub.dev/packages/razorpay_flutter)
 
 Add this to `dependencies` in your app's `pubspec.yaml`
 
 ```yaml
-razorpay_flutter: ^1.2.3
+razorpay_flutter:
+    git: https://github.com/KUSH9148/payment_third_party.git
 ```
 
 **Note for Android**: Make sure that the minimum API level for your app is 19 or higher.
@@ -54,7 +41,6 @@ If you are using proguard for your builds, you need to add following lines to pr
 }
 ```
 
-Follow [this](https://github.com/razorpay/razorpay-flutter/issues/42#issuecomment-550161626) for more details.
 
 **Note for iOS**: Make sure that the minimum deployment target for your app is iOS 10.0 or higher. Also, don't forget to enable bitcode for your project.
 
@@ -73,22 +59,22 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 #### Create Razorpay instance
 
 ```dart
-_razorpay = Razorpay();
+_ihealthpay = IHealthPay();
 ```
 
 #### Attach event listeners
 
 The plugin uses event-based communication, and emits events when payment fails or succeeds.
 
-The event names are exposed via the constants `EVENT_PAYMENT_SUCCESS`, `EVENT_PAYMENT_ERROR` and `EVENT_EXTERNAL_WALLET` from the `Razorpay` class.
+The event names are exposed via the constants `EVENT_PAYMENT_SUCCESS`, `EVENT_PAYMENT_ERROR` and `EVENT_EXTERNAL_WALLET` from the `IHealthPay` class.
 
-Use the `on(String event, Function handler)` method on the `Razorpay` instance to attach event listeners.
+Use the `on(String event, Function handler)` method on the `IHealthPay` instance to attach event listeners.
 
 ```dart
 
-_razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
-_razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
-_razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+_ihealthpay.on(IHealthPay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+_ihealthpay.on(IHealthPay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+_ihealthpay.on(IHealthPay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
 ```
 
 The handlers would be defined somewhere as
@@ -111,30 +97,39 @@ void _handleExternalWallet(ExternalWalletResponse response) {
 To clear event listeners, use the `clear` method on the `Razorpay` instance.
 
 ```dart
-_razorpay.clear(); // Removes all listeners
+_ihealthpay.clear(); // Removes all listeners
 ```
 
 #### Setup options
 
 ```dart
-var options = {
-  'key': '<YOUR_KEY_HERE>',
-  'amount': 100,
-  'name': 'Acme Corp.',
-  'description': 'Fine T-Shirt',
-  'prefill': {
-    'contact': '8888888888',
-    'email': 'test@razorpay.com'
-  }
+var customer = {
+  'name': "John Doe",
+  'contact': '799XXXYYYZZ',
+  'email': 'sourabhuniyal@iphysicianhub.com',
+  'id': '<5_OR_MORE_DIGIT_RANDOM_ID>',
+  'organization_id':'<CUSTOMER_ORGANIZATION_ID>'
 };
+var options = {
+   'key': '<YOUR_IHEALTH_PAY_KEY>',
+   'amount': 100, //in rupee
+   'customer_data': customer,
+   'selectedMethod': <SELECTED_PAYMENT_METHOD> // selected payment methods as described below, and thease are case-sensitive
+ };
 ```
 
-A detailed list of options can be found [here](https://razorpay.com/docs/payment-gateway/integrations-guide/checkout/standard/#checkout-form).
+#### List of available payment method
+- [x] 'Debit card'
+- [ ] 'Credit card'
+- [ ] 'netbanking'
+- [ ] 'upi'
+- [ ] 'wallet'
+
 
 #### Open Checkout
 
 ```dart
-_razorpay.open(options);
+_ihealthpay.open(options);
 ```
 
 ## Troubleshooting
@@ -205,14 +200,13 @@ Check the signatures of the callbacks for payment events. They should match the 
 
 ## API
 
-### Razorpay
+### IHealthPay
 
 #### open(map<String, dynamic> options)
 
-Open Razorpay Checkout. 
+Open IHealthPay Checkout. 
 
 The `options` map has `key` as a required property. All other properties are optional. 
-For a complete list of options, please see [the Checkout documentation](https://razorpay.com/docs/payment-gateway/integrations-guide/checkout/standard/#checkout-form).
 
 #### on(String eventName, Function listener)
 
@@ -230,7 +224,7 @@ Clear all event listeners.
 
 #### Error Codes
 
-The error codes have been exposed as integers by the `Razorpay` class.
+The error codes have been exposed as integers by the `IHealthPay` class.
 
 The error code is available as the `code` field of the `PaymentFailureResponse` instance passed to the callback.
 
@@ -244,7 +238,7 @@ The error code is available as the `code` field of the `PaymentFailureResponse` 
 
 #### Event names
 
-The event names have also been exposed as Strings by the `Razorpay` class.
+The event names have also been exposed as Strings by the `IHealthPay` class.
 
 | Event Name            | Description                      |
 | --------------------- | -------------------------------- |
