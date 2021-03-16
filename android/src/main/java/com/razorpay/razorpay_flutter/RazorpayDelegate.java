@@ -1,9 +1,12 @@
 package com.razorpay.razorpay_flutter;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
 
 import com.google.gson.Gson;
@@ -44,14 +47,14 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
     private Result pendingResult;
     private Map<String, Object> pendingReply;
     private Map<String, Object> requestedArguments;
-    private final String API_AUTH_KEYGN = "cnpwX3Rlc3RfVHg3VEs2V1gwdDdaaVE6enNRSTZKREJQRGlicXNpa2pNaE4xS1Jz";
-    private final String API_AUTH_KEY = "cnpwX3Rlc3RfZkVXS0puV3RmSFZuYkk6RG1yMnpZc2Vkdmp3V0hWSHh1T3dCelNS";
-//    private final String WEB_SERVICE_URL = "http://192.168.1.20/App_DataService/api/Service";
+    private static String API_AUTH_KEY = "";
+    private static String RAZOR_KEY = "";
+
+    private final String WEB_SERVICE_URL = "http://192.168.1.20/App_DataService/api/Service";
     //    private final String WEB_SERVICE_URL = "http://appdataservice.iphysicianhub.com/api/Service";
-        private final String WEB_SERVICE_URL = "http://stageservices.iphysicianhub.com/api/Service";
+//        private final String WEB_SERVICE_URL = "http://stageservices.iphysicianhub.com/api/Service";
     private final String CREATE_ORDER_URL = "https://api.razorpay.com/v1/orders";
-    private final String RAZOR_KEYGN = "rzp_test_Tx7TK6WX0t7ZiQ";
-    private final String RAZOR_KEY = "rzp_test_fEWKJnWtfHVnbI";
+
 
     // Response codes for communicating with plugin
     private static final int CODE_PAYMENT_SUCCESS = 0;
@@ -67,23 +70,59 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
     private static final int UNKNOWN_ERROR = 100;
     private IphOrder createdOrder;
     private Map<String, String> customerDetails;
+    private Map<String, String> initializeDetails;
+    private SharedPreferences sharedpreferences;
 
 
     public RazorpayDelegate(Activity activity) {
         this.activity = activity;
+        sharedpreferences = activity.getSharedPreferences("iHealthPayPref", Context.MODE_PRIVATE);
+    }
+
+    void init(Map<String, String> arguments, Result result) {
+        this.pendingResult = result;
+
+        initializeDetails = arguments;
+        Map<String, Object> reply = new HashMap<>();
+        Map<String, Object> dataReply = new HashMap<>();
+        try {
+            reply.put("type", CODE_PAYMENT_ERROR);
+            if(arguments == null){
+                dataReply.put("error", "Please provide organization_id and account_id");
+                reply.put("data", dataReply);
+                sendReply(reply);
+            }else if (!arguments.containsKey("account_id") || TextUtils.isEmpty(arguments.get("account_id"))) {
+                dataReply.put("error", "Please provide your account id");
+                reply.put("data", dataReply);
+                sendReply(reply);
+            }else if (!arguments.containsKey("organization_id") || TextUtils.isEmpty(arguments.get("organization_id"))) {
+                dataReply.put("error", "Please provide your organization id");
+                reply.put("data", dataReply);
+                sendReply(reply);
+            }else{
+                GetIhealthpayCredentials getIhealthpayCredentials =  new GetIhealthpayCredentials();
+                getIhealthpayCredentials.execute();
+            }
+        } catch (Exception e) {
+            dataReply.put("error", "Failed to initialize, please contact our support team, 141");
+            reply.put("data", dataReply);
+            sendReply(reply);
+        }
     }
 
     void openCheckout(Map<String, Object> arguments, Result result) {
         this.pendingResult = result;
 
         requestedArguments = arguments;
+        RAZOR_KEY = getValue("iHealthKey");
+        API_AUTH_KEY = getValue("iHealthAuthKey");
 
         customerDetails = new HashMap<>();
+        Map<String, Object> reply = new HashMap<>();
+        Map<String, Object> dataReply = new HashMap<>();
 
         try {
-            Map<String, Object> reply = new HashMap<>();
             reply.put("type", CODE_PAYMENT_ERROR);
-            Map<String, Object> dataReply = new HashMap<>();
 
             if(requestedArguments.get("customer_data") == null){
                 dataReply.put("error", "Please provide customer_data");
@@ -121,16 +160,22 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            dataReply.put("error", "Failed to initialize, please contact our support team, 141");
+            reply.put("data", dataReply);
+            sendReply(reply);
         }
     }
 
     private void sendReply(Map<String, Object> data) {
-        if (pendingResult != null) {
-            pendingResult.success(data);
-            pendingReply = null;
-        } else {
-            pendingReply = data;
+        try{
+            if (pendingResult != null) {
+                pendingResult.success(data);
+                pendingReply = null;
+            } else {
+                pendingReply = data;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -341,6 +386,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
                 }
                 amount = amount + selectedAmount;
             }
+            requestedArguments.put("final_amount_rs", amount);
             amount = amount * 100; // convert to paise
 
 
@@ -549,7 +595,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
                 ParameterValue[1] = customerDetails.get("name");
                 ParameterValue[2] = customerDetails.get("organization_id");
                 ParameterValue[3] = customerDetails.get("customer_id");
-                ParameterValue[4] = requestedArguments.get("actual_amount").toString();
+                ParameterValue[4] = requestedArguments.get("final_amount_rs").toString();
                 ParameterValue[5] = customerDetails.get("email");
                 ParameterValue[6] = createdOrder.getId();
 
@@ -559,7 +605,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
                 requestData.put("WebMethodName", "SaveRazorPaydetails");
 
                 String data = new GsonBuilder().create().toJson(requestData);
-                Log.e("IPH 546", data);
+                Log.e("IPH", "599");
 
                 RequestBody body = RequestBody.create(JSON, data);
                 Request request = new Request.Builder()
@@ -570,7 +616,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
 
                 Response responseBody = client.newCall(request).execute();
                 response = responseBody.body().string();
-                Log.e("IPH 557", response);
+                Log.e("IPH ", "610");
             } catch (Exception e) {
                 reply = new HashMap<>();
                 reply.put("type", CODE_PAYMENT_ERROR);
@@ -592,5 +638,123 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
                 openCheckOut();
             }
         }
+    }
+
+
+
+
+    public class GetIhealthpayCredentials extends AsyncTask<Void, Void, Void> {
+
+        OkHttpClient client = new OkHttpClient();
+        Map<String, Object> reply;
+        String responseBody;
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+
+            try {
+                final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+
+                String []ParameterName = new String[2];
+                ParameterName[0] = "AccountID";
+                ParameterName[1] = "iHealthPayOrganizationID";
+                String []ParameterValue = new String[2];
+                ParameterValue[0] = initializeDetails.get("account_id");
+                ParameterValue[1] = initializeDetails.get("organization_id");
+
+                Map<String, Object> requestData = new HashMap<>();
+                requestData.put("ParameterName", ParameterName);
+                requestData.put("ParameterValue", ParameterValue);
+                requestData.put("WebMethodName", "GetIhealthpayCredentials");
+
+                String data = new GsonBuilder().create().toJson(requestData);
+
+                RequestBody body = RequestBody.create(JSON, data);
+
+                Request request = new Request.Builder()
+                        .url(WEB_SERVICE_URL)
+                        .post(body)
+                        .build();
+
+                Response response = client.newCall(request).execute();
+                responseBody = response.body().string();
+                Log.e("673", "-");
+            } catch (Exception e) {
+                reply = new HashMap<>();
+                reply.put("type", CODE_PAYMENT_ERROR);
+                Map<String, Object> data = new HashMap<>();
+                data.put("description", "failed to get iHealth pay details");
+                data.put("error", "failed to get initialize iHealth pay");
+                reply.put("data", data);
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            if(reply != null){
+                sendReply(reply);
+            }else {
+                saveIhealthPayDetails(responseBody);
+            }
+        }
+    }
+
+    private void saveIhealthPayDetails(String responseStr){
+        Map<String, Object> reply;
+        try {
+            Log.e("IPH", "704");
+            JSONObject mainObject = new JSONObject(responseStr);
+            if(mainObject.has("Result") && !TextUtils.isEmpty(responseStr)) {
+                String resStr = mainObject.getString("Result");
+
+                JSONObject obj = new JSONObject(resStr);
+                Log.e("IPH", "712");
+
+                if( TextUtils.isEmpty(obj.getString("Key")) || TextUtils.isEmpty(obj.getString("Auth_Key"))){
+                    reply = new HashMap<>();
+                    reply.put("type", CODE_PAYMENT_ERROR);
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("description", "failed to get iHealth pay details");
+                    data.put("error", "failed to get initialize iHealth pay");
+                    reply.put("data", data);
+                }else {
+                    setKeys(obj.getString("Key"), obj.getString("Auth_Key"));
+
+                    reply = new HashMap<>();
+                    reply.put("type", CODE_PAYMENT_ERROR);
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("description", "Successfully initialized iHealthPay");
+                    data.put("error", "Successfully initialized iHealthPay");
+                    reply.put("data", data);
+                }
+            }else{
+                reply = new HashMap<>();
+                reply.put("type", CODE_PAYMENT_ERROR);
+                Map<String, Object> data = new HashMap<>();
+                data.put("description", "failed to get iHealth pay details");
+                data.put("error", "failed to get initialize iHealth pay");
+                reply.put("data", data);
+            }
+        }catch (Exception e){
+            reply = new HashMap<>();
+            reply.put("type", CODE_PAYMENT_ERROR);
+            Map<String, Object> data = new HashMap<>();
+            data.put("description", "failed to get iHealth pay details");
+            data.put("error", "failed to get initialize iHealth pay");
+            reply.put("data", data);
+        }
+    }
+
+    private void setKeys(String key, String sec){
+        SharedPreferences.Editor editor = sharedpreferences.edit();
+        editor.putString("iHealthKey", key);
+        editor.putString("iHealthAuthKey", sec);
+        editor.apply();
+    }
+    private String getValue(String key){
+        return sharedpreferences.getString(key, "");
     }
 }
