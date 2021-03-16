@@ -62,7 +62,9 @@ public class RazorpayFlutterPlugin implements FlutterPlugin, MethodCallHandler, 
 
 
         switch (call.method) {
-
+            case "init":
+                razorpayDelegate.init((Map<String, String>) call.arguments, result);
+                break;
             case "open":
                 razorpayDelegate.openCheckout((Map<String, Object>) call.arguments, result);
                 break;
