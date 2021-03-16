@@ -16,9 +16,7 @@ public class RazorpayDelegate: NSObject, RazorpayPaymentCompletionProtocolWithDa
     var API_AUTH_KEY = "";
     var RAZOR_KEY = "";
     
-    let WEB_SERVICE_URL = "http://192.168.1.20/App_DataService/api/Service";
-    //let WEB_SERVICE_URL = "http://appdataservice.iphysicianhub.com/api/Service";
-    //let WEB_SERVICE_URL = "http://stageservices.iphysicianhub.com/api/Service";
+    var WEB_SERVICE_URL = "http://appdataservice.iphysicianhub.com/api/Service";
     
     
     let CREATE_ORDER_URL = "https://api.razorpay.com/v1/orders";
@@ -91,6 +89,12 @@ public class RazorpayDelegate: NSObject, RazorpayPaymentCompletionProtocolWithDa
             }else if(initializeDetails["organization_id"] == nil && initializeDetails["organization_id"] == ""){
                 sendReply(code:RazorpayDelegate.CODE_PAYMENT_ERROR, error: "Please provide your organization id");
             }else{
+                var payment_mode = "";
+                if ((initializeDetails["payment_mode"] != nil) && initializeDetails["payment_mode"] != "") {
+                    payment_mode = initializeDetails["payment_mode"] ?? "";
+                }
+                setSession(key: "payment_mode", value: payment_mode);
+                WEB_SERVICE_URL = payment_mode == "test" ? "http://stageservices.iphysicianhub.com/api/Service" : WEB_SERVICE_URL;
                 getIHealthPayDetails();
             }
         }
@@ -125,6 +129,8 @@ public class RazorpayDelegate: NSObject, RazorpayPaymentCompletionProtocolWithDa
                 customerDetails.updateValue(customerData["email"] ?? "", forKey: "email");
                 customerDetails.updateValue(customerData["id"] ?? "", forKey: "customer_id");
                 customerDetails.updateValue(customerData["organization_id"] ?? "", forKey: "organization_id");
+                
+                WEB_SERVICE_URL = getValue(key: "payment_mode") == "test" ? "http://stageservices.iphysicianhub.com/api/Service" : WEB_SERVICE_URL;
                 
                 getCharges();
             }
@@ -548,6 +554,19 @@ public class RazorpayDelegate: NSObject, RazorpayPaymentCompletionProtocolWithDa
 
         preferences.set(ihaDetails["Key"], forKey: "iHealthKey")
         preferences.set((ihaDetails["Auth_Key"] as! String), forKey: "iHealthAuthKey")
+
+        //  Save to disk
+        let didSave = preferences.synchronize()
+
+        if !didSave {
+            //  Couldn't save (I've never seen this happen in real world testing)
+        }
+    }
+    private func setSession(key: String, value: String){
+        
+        let preferences = UserDefaults.standard
+
+        preferences.set(value, forKey: key)
 
         //  Save to disk
         let didSave = preferences.synchronize()
