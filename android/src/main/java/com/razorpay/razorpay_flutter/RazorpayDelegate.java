@@ -50,9 +50,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
     private static String API_AUTH_KEY = "";
     private static String RAZOR_KEY = "";
 
-    private final String WEB_SERVICE_URL = "http://192.168.1.20/App_DataService/api/Service";
-    //    private final String WEB_SERVICE_URL = "http://appdataservice.iphysicianhub.com/api/Service";
-//        private final String WEB_SERVICE_URL = "http://stageservices.iphysicianhub.com/api/Service";
+    private String WEB_SERVICE_URL = "http://appdataservice.iphysicianhub.com/api/Service";
     private final String CREATE_ORDER_URL = "https://api.razorpay.com/v1/orders";
 
 
@@ -85,6 +83,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
         initializeDetails = arguments;
         Map<String, Object> reply = new HashMap<>();
         Map<String, Object> dataReply = new HashMap<>();
+
         try {
             reply.put("type", CODE_PAYMENT_ERROR);
             if(arguments == null){
@@ -100,6 +99,10 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
                 reply.put("data", dataReply);
                 sendReply(reply);
             }else{
+                String payment_mode = arguments.containsKey("payment_mode") && !TextUtils.isEmpty(arguments.get("payment_mode")) ? arguments.get("payment_mode") : "";
+                setKeys("payment_mode", payment_mode);
+                WEB_SERVICE_URL = payment_mode.equals("test") ? "http://stageservices.iphysicianhub.com/api/Service": WEB_SERVICE_URL;
+                Log.e("105", WEB_SERVICE_URL);
                 GetIhealthpayCredentials getIhealthpayCredentials =  new GetIhealthpayCredentials();
                 getIhealthpayCredentials.execute();
             }
@@ -154,6 +157,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
                     customerDetails.put("email", customerData.get("email"));
                     customerDetails.put("customer_id", CustomerUniqueID);
                     customerDetails.put("organization_id", iHealthPayOrganizationID);
+                    WEB_SERVICE_URL = getValue("payment_mode").equals("test") ? "http://stageservices.iphysicianhub.com/api/Service": WEB_SERVICE_URL;
                     GetChargesHandler getChargesHandler =  new GetChargesHandler();
                     getChargesHandler.execute();
                 }
