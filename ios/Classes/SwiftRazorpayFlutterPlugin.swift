@@ -14,6 +14,10 @@ public class SwiftRazorpayFlutterPlugin: NSObject, FlutterPlugin {
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
+        case "init":
+            let options = call.arguments as! Dictionary<String, String>
+            razorpayDelegate.initialized(options: options, result: result);
+            break;
         case "open":
             let options = call.arguments as! Dictionary<String, Any>
             razorpayDelegate.open(options: options, result: result);
