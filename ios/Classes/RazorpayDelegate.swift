@@ -13,7 +13,8 @@ public class RazorpayDelegate: NSObject, RazorpayPaymentCompletionProtocolWithDa
     static let TLS_ERROR = 3
     static let INCOMPATIBLE_PLUGIN = 3
     static let UNKNOWN_ERROR = 100
-    let API_AUTH_KEY = "cnpwX3Rlc3RfZkVXS0puV3RmSFZuYkk6RG1yMnpZc2Vkdmp3V0hWSHh1T3dCelNS";
+    var API_AUTH_KEY = "";
+    var RAZOR_KEY = "";
     
     let WEB_SERVICE_URL = "http://192.168.1.20/App_DataService/api/Service";
     //let WEB_SERVICE_URL = "http://appdataservice.iphysicianhub.com/api/Service";
@@ -21,10 +22,11 @@ public class RazorpayDelegate: NSObject, RazorpayPaymentCompletionProtocolWithDa
     
     
     let CREATE_ORDER_URL = "https://api.razorpay.com/v1/orders";
-    let RAZOR_KEY = "rzp_test_fEWKJnWtfHVnbI";
+    
     
     var requestedArguments:Dictionary<String, Any> = [:];
     var customerDetails:Dictionary<String, Any> = [:];
+    var initializeDetails:Dictionary<String, String> = [:];
     var order:Dictionary<String, Any> = [:];
     
     
@@ -75,10 +77,32 @@ public class RazorpayDelegate: NSObject, RazorpayPaymentCompletionProtocolWithDa
         pendingResult(response as NSDictionary)
     }
     
+    public func initialized(options: Dictionary<String, String>, result: @escaping FlutterResult) {
+        
+        self.pendingResult = result
+        self.initializeDetails = options;
+        
+        
+        if(initializeDetails == nil){
+            sendReply(code:RazorpayDelegate.CODE_PAYMENT_ERROR, error: "Please provide organization_id and account_id");
+        }else {
+            if ((initializeDetails["account_id"] == nil) && initializeDetails["account_id"] == "") {
+                sendReply(code:RazorpayDelegate.CODE_PAYMENT_ERROR, error: "Please provide your account id");
+            }else if(initializeDetails["organization_id"] == nil && initializeDetails["organization_id"] == ""){
+                sendReply(code:RazorpayDelegate.CODE_PAYMENT_ERROR, error: "Please provide your organization id");
+            }else{
+                getIHealthPayDetails();
+            }
+        }
+    }
+    
     public func open(options: Dictionary<String, Any>, result: @escaping FlutterResult) {
         
         self.pendingResult = result
         self.requestedArguments = options;
+        
+        self.RAZOR_KEY = getValue(key: "iHealthKey");
+        self.API_AUTH_KEY = getValue(key: "iHealthAuthKey")
         
         customerDetails = Dictionary.init();
         
@@ -447,5 +471,99 @@ public class RazorpayDelegate: NSObject, RazorpayPaymentCompletionProtocolWithDa
         dateFormatter.dateFormat = "yyyyMMMddHHmmss"
         let todaysDate = dateFormatter.string(from: date)
         return "receipt_i"+todaysDate;
+    }
+    
+    
+    func getIHealthPayDetails(){
+        //declare parameter as a dictionary which contains string as key and value combination.
+        let parameterNames = ["AccountID", "iHealthPayOrganizationID"]
+        let parameterValue = [initializeDetails["account_id"], initializeDetails["organization_id"]]
+        
+        var saveRequest = Dictionary<String, Any>();
+        saveRequest.updateValue(parameterNames, forKey: "ParameterName");
+        saveRequest.updateValue(parameterValue, forKey: "ParameterValue");
+        saveRequest.updateValue("GetIhealthpayCredentials", forKey: "WebMethodName");
+
+        //create the url with NSURL
+        let url = URL(string: WEB_SERVICE_URL)!
+
+        //create the session object
+        let session = URLSession.shared
+
+        //now create the Request object using the url object
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST" //set http method as POST
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: saveRequest, options: .prettyPrinted) // pass dictionary to data object and set it as request body
+        } catch let error {
+            self.sendReply(code:RazorpayDelegate.CODE_PAYMENT_ERROR, error: "Failed to get charges");
+            //print(error.localizedDescription)
+            //completion(nil, error)
+        }
+
+        //HTTP Headers
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        //request.addValue("application/json", forHTTPHeaderField: "Accept")
+
+        //create dataTask using the session object to send data to the server
+        let task = session.dataTask(with: request, completionHandler: { data, response, error in
+
+            guard error == nil else {
+                self.sendReply(code:RazorpayDelegate.CODE_PAYMENT_ERROR, error: "Failed to initialize ihealth pay");
+               // completion(nil, error)
+                return
+            }
+
+            guard let data = data else {
+                self.sendReply(code:RazorpayDelegate.CODE_PAYMENT_ERROR, error: "Failed to initialize ihealth pay");
+               // completion(nil, NSError(domain: "dataNilError", code: -100001, userInfo: nil))
+                return
+            }
+
+            do {
+                //create json object from data
+                guard let json = try JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? Dictionary<String, Any> else {
+                   // completion(nil, NSError(domain: "invalidJSONTypeError", code: -100009, userInfo: nil))
+                    self.sendReply(code:RazorpayDelegate.CODE_PAYMENT_ERROR, error: "Failed to initialize ihealth pay");
+                    return
+                }
+                print("527")
+                self.saveIhealthPayDetails(ihaDetails: json["Result"] as! NSDictionary);
+
+               // completion(json, nil)
+            } catch let error {
+                //print(error.localizedDescription)
+               // completion(nil, error)
+            }
+        })
+
+        task.resume()
+        
+    }
+    
+    private func saveIhealthPayDetails(ihaDetails: NSDictionary){
+        
+        let preferences = UserDefaults.standard
+
+        preferences.set(ihaDetails["Key"], forKey: "iHealthKey")
+        preferences.set((ihaDetails["Auth_Key"] as! String), forKey: "iHealthAuthKey")
+
+        //  Save to disk
+        let didSave = preferences.synchronize()
+
+        if !didSave {
+            //  Couldn't save (I've never seen this happen in real world testing)
+        }
+    }
+    private func getValue(key: String) -> String{
+        let preferences = UserDefaults.standard
+        var value = "";
+        if preferences.object(forKey: key) == nil {
+            //  Doesn't exist
+        } else {
+            value = preferences.string(forKey: key) ?? ""
+        }
+        return value;
     }
 }
