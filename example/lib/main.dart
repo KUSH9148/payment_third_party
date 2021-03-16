@@ -1,55 +1,40 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
-void main() {
-  runApp(MyApp());
-}
+import 'package:fluttertoast/fluttertoast.dart';
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+void main() => runApp(MyApp());
+
+class MyApp extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: MyHomePage(title: 'iHealthPay Payments'),
-    );
-  }
+  _MyAppState createState() => _MyAppState();
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  final String title;
-
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
+class _MyAppState extends State<MyApp> {
+  static const platform = const MethodChannel("razorpay_flutter");
 
   IHealthPay _ihealthpay;
-
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Github Razorpay'),
+          title: const Text('IHealthPay Sample App'),
         ),
         body: Center(
             child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  RaisedButton(onPressed: payByDebit, child: Text('Pay 100 By Debit')),
+                RaisedButton(onPressed: payByDebit, child: Text('Pay 100 By Debit')),
                   RaisedButton(onPressed: payByCredit, child: Text('Pay 100 By Credit')),
                   RaisedButton(onPressed: payByUpi, child: Text('Pay 100 By UPI')),
-                  RaisedButton(onPressed: payByNetbanking, child: Text('Pay 200 By Net banking')),
                   RaisedButton(onPressed: payByCredit5, child: Text('Pay 50000 By Credit'))
-                ])),
+            ])),
       ),
     );
   }
@@ -61,6 +46,8 @@ class _MyHomePageState extends State<MyHomePage> {
     _ihealthpay.on(IHealthPay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
     _ihealthpay.on(IHealthPay.EVENT_PAYMENT_ERROR, _handlePaymentError);
     _ihealthpay.on(IHealthPay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+
+    initIHealthPay();
   }
 
   @override
@@ -70,7 +57,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void payByDebit() {
-    openCheckout("Debit card");
+   openCheckout("Debit card");
   }
 
   void payByCredit() {
@@ -79,21 +66,41 @@ class _MyHomePageState extends State<MyHomePage> {
   void payByCredit5() {
     openCheckout("Credit card", amount: 5000);
   }
-  void payByNetbanking() {
-    openCheckout("netbanking", amount: 200);
-  }
 
   void payByUpi() {
     openCheckout("UPI");
   }
 
+  String getRandomId(){
+    int randomId = 1;
+    var rng = new Random();
+   // for (var i = 0; i < 10; i++) {
+      randomId = rng.nextInt(10000);
+   // }
+    return randomId.toString();
+  }
+
+  void initIHealthPay() async {
+    var options = {
+      'account_id': "acc_01245",
+      'organization_id':'2883'
+    };
+    try {
+      _ihealthpay.init(options);
+    } catch (e) {
+      debugPrint(e);
+    }
+  }
+
   void openCheckout(selectedMethod, {amount = 100}) async {
+    String customerId = getRandomId();
+    print("CID:"+customerId);
     var customer = {
-      'name': "Shivam Lussote",
+      'name': "Ravi P",
       'contact': '7995055011',
       'email': 'sourabhuniyal@iphysicianhub.com',
-      'id': '197545',
-      'organization_id':'2875'
+      'id': customerId,
+      'organization_id':'2883'
     };
     var options = {
       'key': 'iph_gujarat_pharmacy',
@@ -110,17 +117,18 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    print("IHP: ======= _handlePaymentSuccess ======");
-    print(response);
+    Fluttertoast.showToast(
+        msg: "SUCCESS: " + response.paymentId, timeInSecForIos: 4);
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
-    print("IHP: ======= _handlePaymentError ======");
-    print(response);
+    Fluttertoast.showToast(
+        msg: "ERROR: " + response.code.toString() + " - " + response.message,
+        timeInSecForIos: 4);
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {
-    print("IHP: ======= _handleExternalWallet ======");
-    print(response);
+    Fluttertoast.showToast(
+        msg: "EXTERNAL_WALLET: " + response.walletName, timeInSecForIos: 4);
   }
 }
