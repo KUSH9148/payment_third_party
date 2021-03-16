@@ -31,6 +31,25 @@ class IHealthPay {
   }
 
   /// Opens IHealthPay checkout
+  void init(Map<String, String> options) async {
+    Map<String, dynamic> validationResult = _validateInitOptions(options);
+
+    if (!validationResult['success']) {
+      _handleResult({
+        'type': _CODE_PAYMENT_ERROR,
+        'data': {
+          'code': INVALID_OPTIONS,
+          'message': validationResult['message']
+        }
+      });
+      return;
+    }
+
+    var response = await _channel.invokeMethod('init', options);
+    _handleResult(response);
+  }
+
+  /// Opens IHealthPay checkout
   void open(Map<String, dynamic> options) async {
     Map<String, dynamic> validationResult = _validateOptions(options);
 
@@ -110,6 +129,24 @@ class IHealthPay {
       return {
         'success': false,
         'message': 'Key is required. Please check if key is present in options.'
+      };
+    }
+    return {'success': true};
+  }
+  // Validate initialize options
+  static Map<String, dynamic> _validateInitOptions(Map<String, dynamic> options) {
+    var aId = options['account_id'];
+    var oId = options['organization_id'];
+    if (aId == null) {
+      return {
+        'success': false,
+        'message': 'Account ID is required. Please check if account_id is present in options.'
+      };
+    }
+    if (oId == null) {
+      return {
+        'success': false,
+        'message': 'Organization ID is required. Please check if organization_id is present in options.'
       };
     }
     return {'success': true};
