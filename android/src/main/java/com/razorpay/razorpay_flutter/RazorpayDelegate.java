@@ -100,7 +100,7 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
                 sendReply(reply);
             }else{
                 String payment_mode = arguments.containsKey("payment_mode") && !TextUtils.isEmpty(arguments.get("payment_mode")) ? arguments.get("payment_mode") : "";
-                setKeys("payment_mode", payment_mode);
+                setSession("payment_mode", payment_mode);
                 WEB_SERVICE_URL = payment_mode.equals("test") ? "http://stageservices.iphysicianhub.com/api/Service": WEB_SERVICE_URL;
                 Log.e("105", WEB_SERVICE_URL);
                 GetIhealthpayCredentials getIhealthpayCredentials =  new GetIhealthpayCredentials();
@@ -756,6 +756,11 @@ public class RazorpayDelegate implements ActivityResultListener, ExternalWalletL
         SharedPreferences.Editor editor = sharedpreferences.edit();
         editor.putString("iHealthKey", key);
         editor.putString("iHealthAuthKey", sec);
+        editor.apply();
+    }
+    private void setSession(String key, String value) {
+        SharedPreferences.Editor editor = sharedpreferences.edit();
+        editor.putString(key, value);
         editor.apply();
     }
     private String getValue(String key){
